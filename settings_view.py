@@ -1,21 +1,16 @@
 import flet as ft
-import json
 
 class SettingsView(ft.Container):
     def __init__(self, page: ft.Page, products_config: dict, save_cb):
         super().__init__()
         self.page = page
-        self.padding = 15 # Optimized for mobile 
+        self.padding = 15 
         self.expand = True
         self.visible = False
         
         self.save_cb = save_cb 
         self.products = products_config
         self.expanded_products = set() 
-
-        # --- FILE PICKER FOR EXPORT ---
-        self.export_picker = ft.FilePicker(on_result=self.on_export_result)
-        self.page.overlay.append(self.export_picker)
 
         self.product_name_input = ft.TextField(
             label="New Product Name", expand=True, 
@@ -24,13 +19,6 @@ class SettingsView(ft.Container):
         self.add_product_btn = ft.ElevatedButton(
             "Create Product", icon=ft.Icons.ADD, on_click=self.add_product, 
             bgcolor="#2563EB", color="#FFFFFF", height=48, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
-        )
-        
-        # --- NEW BACKUP BUTTON ---
-        self.export_btn = ft.ElevatedButton(
-            "Backup Database", icon=ft.Icons.DOWNLOAD, 
-            on_click=lambda _: self.export_picker.save_file(dialog_title="Save ERP Backup", file_name="amin_erp_backup.json", allowed_extensions=["json"]), 
-            bgcolor="#10B981", color="#FFFFFF", height=48, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
         )
 
         self.products_grid = ft.ResponsiveRow(columns=12, spacing=15, run_spacing=15)
@@ -43,8 +31,7 @@ class SettingsView(ft.Container):
                     ft.Column([
                         ft.Text("Product Setup Matrix", size=24, weight=ft.FontWeight.W_800, color="#0F172A"),
                         ft.Text("Define global routing and processing steps.", size=13, color="#64748B"),
-                    ], expand=True),
-                    self.export_btn # Placed neatly at the top right
+                    ], expand=True)
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Container(height=10),
                 ft.Container(
@@ -70,22 +57,6 @@ class SettingsView(ft.Container):
                 ft.ElevatedButton("Save", on_click=self.save_edit, bgcolor="#2563EB", color="#FFFFFF", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
             ],
         )
-
-    # --- NATIVE FILE SAVER LOGIC ---
-    def on_export_result(self, e: ft.FilePickerResultEvent):
-        if e.path:
-            try:
-                # Fetch the absolute latest full DB from client storage
-                data = self.page.client_storage.get("erp_data")
-                if not data:
-                    data = {"error": "No data found"}
-                
-                # Write it to the location the user tapped in the Android menu
-                with open(e.path, "w", encoding="utf-8") as f:
-                    json.dump(data, f, indent=4)
-                self.show_snackbar("Database exported successfully!")
-            except Exception as ex:
-                self.show_snackbar(f"Failed to export: {ex}", is_error=True)
 
     def show_snackbar(self, msg, is_error=False):
         self.page.open(ft.SnackBar(content=ft.Text(msg, color="#FFFFFF", weight=ft.FontWeight.W_500), bgcolor="#EF4444" if is_error else "#10B981", behavior=ft.SnackBarBehavior.FLOATING, margin=20, shape=ft.RoundedRectangleBorder(radius=8)))
