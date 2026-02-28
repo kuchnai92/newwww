@@ -1,44 +1,41 @@
 import flet as ft
 import traceback
-import asyncio
+
+# --- SAFE IMPORTS ---
+INIT_ERROR = None
+try:
+    from datetime import datetime
+    from sidebar import Sidebar
+    from top_bar import FactoryHeader
+    from settings_view import SettingsView
+    from location_view import LocationView, parse_date
+except Exception as e:
+    INIT_ERROR = traceback.format_exc()
 
 def main(page: ft.Page):
-    # --- 1. PLATFORM DETECTION ---
-    is_mobile = page.platform in [ft.PagePlatform.ANDROID, ft.PagePlatform.IOS]
+    BG_COLOR = "#F8FAFC"
+    CARD_BG = "#FFFFFF"
+    TEXT_MAIN = "#0F172A"
+    TEXT_SUB = "#64748B"
+    PRIMARY = "#2563EB"
 
-    # --- 2. MOBILE CRASH HANDLERS ---
-    if is_mobile:
-        try:
-            loop = asyncio.get_event_loop()
-            def suppress_connection_error(loop, context):
-                msg = context.get("message", "")
-                if "10054" in str(msg) or isinstance(context.get("exception"), ConnectionResetError):
-                    return
-                loop.default_exception_handler(context)
-            loop.set_exception_handler(suppress_connection_error)
-        except: pass
+    page.title = "Amin & Sons ERP"
+    page.theme_mode = ft.ThemeMode.LIGHT
+    page.padding = 0
+    page.spacing = 0
+    page.bgcolor = BG_COLOR
+
+    # --- SHOW INIT ERRORS IF ANY ---
+    if INIT_ERROR:
+        page.add(ft.SafeArea(ft.Column([
+            ft.Text("IMPORT CRASH!", color=ft.colors.RED_700, weight=ft.FontWeight.BOLD, size=22),
+            ft.Container(padding=10, bgcolor=ft.colors.GREY_200, content=ft.Text(INIT_ERROR, color=ft.colors.BLACK, size=11, selectable=True))
+        ], scroll=ft.ScrollMode.AUTO, expand=True)))
+        page.update()
+        return
 
     try:
-        from datetime import datetime
-        from sidebar import Sidebar
-        from top_bar import FactoryHeader
-        from settings_view import SettingsView
-        from location_view import LocationView, parse_date
-
-        BG_COLOR = "#F8FAFC"
-        CARD_BG = "#FFFFFF"
-        TEXT_MAIN = "#0F172A"
-        TEXT_SUB = "#64748B"
-        PRIMARY = "#2563EB"
-
-        page.title = "Amin & Sons ERP"
-        page.theme_mode = ft.ThemeMode.LIGHT
-        page.padding = 0
-        page.spacing = 0
-        page.bgcolor = BG_COLOR
-
-        # --- 3. TEMPORARY RAM STORAGE ONLY ---
-        # ALL storage and permission logic removed to guarantee no white screen crashes.
+        # --- TEMPORARY RAM STORAGE ONLY ---
         products_config = {}
         factories = []
         factory_sub_locations = {}
@@ -48,8 +45,6 @@ def main(page: ft.Page):
         current_nav_index = 0
 
         def save_db():
-            # Does nothing. Data is naturally kept in the app's RAM while it runs.
-            # Kept here so your UI components don't throw errors when they try to trigger a save.
             pass
 
         def show_snack(msg, is_error=False):
@@ -105,7 +100,6 @@ def main(page: ft.Page):
         
         location_view = LocationView(page, products_config, get_current_l3_context, factories, factory_sub_locations, level3_data, save_db)
         
-        # --- SAFE OVERLAY LOADING ---
         if hasattr(location_view, 'overlay_controls'):
             for ctrl in location_view.overlay_controls:
                 page.overlay.append(ctrl)
@@ -264,8 +258,8 @@ def main(page: ft.Page):
         try: page.clean()
         except: pass
         page.add(ft.SafeArea(ft.Column([
-            ft.Text("APP CRASHED!", color=ft.colors.RED_700, weight="bold", size=22),
-            ft.Text(f"Error: {str(e)}", color=ft.colors.BLACK, size=14, weight="bold"),
+            ft.Text("APP CRASHED!", color=ft.colors.RED_700, weight=ft.FontWeight.BOLD, size=22),
+            ft.Text(f"Error: {str(e)}", color=ft.colors.BLACK, size=14, weight=ft.FontWeight.BOLD),
             ft.Container(padding=10, bgcolor=ft.colors.GREY_200, border_radius=8, expand=True, content=ft.Text(error_msg, color=ft.colors.BLACK, size=11, selectable=True))
         ], scroll=ft.ScrollMode.AUTO, expand=True)))
         page.update()
