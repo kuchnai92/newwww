@@ -1,0 +1,41 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: 
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java (Required for Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Essential for Android Flet
+
+      - name: Install Requirements
+        run: |
+          python -m pip install --upgrade pip
+          pip install flet
+          pip install -r requirements.txt
+
+      - name: Build Flet APK
+        run: flet build apk --project "Amin_ERP" --org "com.aminandsons.erp" --yes
+
+      - name: Upload APK to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: Amin-and-Sons-ERP-App
+          path: build/apk/**/*.apk
